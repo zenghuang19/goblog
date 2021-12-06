@@ -60,16 +60,17 @@ func aboutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 type Article struct {
-	Title,Body string
-	ID int64
+	Title, Body string
+	ID          int64
 }
+
 func articlesShowHandler(w http.ResponseWriter, r *http.Request) {
 	//1.获取参数
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	//2.读取文字数据
-	article,err := getArticleById(id)
+	article, err := getArticleById(id)
 
 	//3.出现错误
 	if err != nil {
@@ -77,17 +78,17 @@ func articlesShowHandler(w http.ResponseWriter, r *http.Request) {
 		if err == sql.ErrNoRows {
 			w.WriteHeader(http.StatusNotFound)
 			fmt.Fprint(w, "404 文章未找到")
-		}else {
+		} else {
 			checkError(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprint(w, "500 服务器错误")
 		}
 
-	}else {
+	} else {
 		//4.读取成功
-		tmpl,err := template.ParseFiles("resources/views/articles/show.gohtml")
+		tmpl, err := template.ParseFiles("resources/views/articles/show.gohtml")
 		checkError(err)
-		err = tmpl.Execute(w,article)
+		err = tmpl.Execute(w, article)
 		checkError(err)
 	}
 	fmt.Fprintf(w, "ID"+id)
@@ -117,20 +118,7 @@ func articlesStoreHandler(w http.ResponseWriter, r *http.Request) {
 	title := r.PostFormValue("title")
 	body := r.PostFormValue("body")
 
-	errors := make(map[string]string)
-
-	//验证标题
-	if title == "" {
-		errors["title"] = "标题不能为空"
-	} else if utf8.RuneCountInString(title) < 3 || utf8.RuneCountInString(title) > 40 {
-		errors["title"] = "标题需介于3-40个字符之间"
-	}
-
-	if body == "" {
-		errors["body"] = "内容不能为空"
-	} else if utf8.RuneCountInString(body) < 10 {
-		errors["body"] = "内容长度需大于或等于10个字符"
-	}
+	errors := validateArticleFormData(title, body)
 
 	if len(errors) == 0 {
 		lastInsertID, err := saveArticleToDB(title, body)
@@ -174,16 +162,16 @@ func articlesStoreHandler(w http.ResponseWriter, r *http.Request) {
 	//fmt.Fprintf(w, "title的值: %v", title)
 }
 
-func articlesEditHandler(w http.ResponseWriter, r *http.Request)  {
+func articlesEditHandler(w http.ResponseWriter, r *http.Request) {
 	//1.获取URL参数
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	//2.读取对应的文字数据
-	article :=Article{}
+	article := Article{}
 
 	query := "select * from articles where id = ?"
-	err := db.QueryRow(query,id).Scan(&article.ID,&article.Title,&article.Body)
+	err := db.QueryRow(query, id).Scan(&article.ID, &article.Title, &article.Body)
 
 	//3.出来错误
 	if err != nil {
@@ -191,38 +179,83 @@ func articlesEditHandler(w http.ResponseWriter, r *http.Request)  {
 			//3.1未找到数据
 			w.WriteHeader(http.StatusNotFound)
 			fmt.Fprint(w, "404")
-		}else {
+		} else {
 			//3.2数据库错误
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprint(w, "500")
 		}
-	}else {
+	} else {
 		//4.读取成功，显示表单
-		updateURL,_ := router.Get("articles.update").URL("id", id)
+		updateURL, _ := router.Get("articles.update").URL("id", id)
 		data := ArticlesFormData{
-			Title: article.Title,
-			Body: article.Body,
-			URL: updateURL,
+			Title:  article.Title,
+			Body:   article.Body,
+			URL:    updateURL,
 			Errors: nil,
 		}
-		tmpl,err := template.ParseFiles("resources/views/articles/edit.gohtml")
+		tmpl, err := template.ParseFiles("resources/views/articles/edit.gohtml")
 		checkError(err)
 		err = tmpl.Execute(w, data)
 		checkError(err)
 	}
 }
 
-func articlesUpdateHandler(w http.ResponseWriter, r *http.Request)  {
+func articlesUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	//1.获取参数
 	id := getArticleVariable("id", r)
 
 	//2.获取对应的文章数据
-	_,err := getArticleById(id)
+	article, err := getArticleById(id)
+	fmt.Println(article)
 	//3.如果出现错误
 	if err != nil {
 		if err == sql.ErrNoRows {
 			w.WriteHeader(http.StatusNotFound)
-			fmt.Fprint(w, "")
+			fmt.Fprint(w, "404 文章未找到")
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, err)
+		}
+	} else {
+		//4.未出现错误
+		//4.1 表单验证
+		title := r.PostFormValue("title")
+		body := r.PostFormValue("body")
+
+		errors := validateArticleFormData(title,body)
+
+		if len(errors) == 0 {
+			// 4.2 表单通过验证
+			query := "update articles set title = ?,body = ? where id =?"
+			res,err := db.Exec(query,title,body,id)
+
+			if err != nil {
+				checkError(err)
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprint(w, "500 服务器内部错误")
+			}
+
+			//成功更新，跳转到文章详情页
+			if n,_ := res.RowsAffected(); n > 0 {
+				showURL,_ := router.Get("articles.show").URL("id", id)
+				http.Redirect(w,r,showURL.String(),http.StatusFound)
+			}else {
+				fmt.Fprint(w,"您没有做任何更改")
+			}
+		}else {
+			//4.3 验证未通过
+
+			updateURL,_ := router.Get("articles.update").URL("id", id)
+			data := ArticlesFormData{
+				Title: title,
+				Body: body,
+				URL: updateURL,
+				Errors: errors,
+			}
+			tmpl,err := template.ParseFiles("resources/views/articles/edit.gohtml")
+			checkError(err)
+			err = tmpl.Execute(w,data)
+			checkError(err)
 		}
 	}
 
@@ -232,11 +265,12 @@ func getArticleVariable(parameterName string, r *http.Request) string {
 	return vars[parameterName]
 }
 
-func getArticleById(id string)(Article, error)  {
-	article :=Article{}
-	query := "select * from articles where id=?"
-	err := db.QueryRow(query,id).Scan(&article.ID,&article.Title,article.Body)
-	return article,err
+func getArticleById(id string) (Article, error) {
+	article := Article{}
+
+	query := "select * from articles where id = ?"
+	err := db.QueryRow(query, id).Scan(&article.ID, &article.Title, &article.Body)
+	return article, err
 }
 
 //中间件，设置标头
@@ -257,6 +291,25 @@ func removeTrailingSlash(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(writer, request)
 	})
+}
+
+func validateArticleFormData(title string,body string)map[string]string  {
+	errors := make(map[string]string)
+	// 验证标题
+	if title == "" {
+		errors["title"] = "标题不能为空"
+	} else if utf8.RuneCountInString(title) < 3 || utf8.RuneCountInString(title) > 40 {
+		errors["title"] = "标题长度需介于 3-40"
+	}
+
+	// 验证内容
+	if body == "" {
+		errors["body"] = "内容不能为空"
+	} else if utf8.RuneCountInString(body) < 10 {
+		errors["body"] = "内容长度需大于或等于 10 个字节"
+	}
+
+	return errors
 }
 
 func articlesCreateHandler(w http.ResponseWriter, r *http.Request) {
@@ -361,11 +414,8 @@ func main() {
 	homeUrl, _ := router.Get("home").URL()
 	fmt.Println("home:", homeUrl)
 
-	articleUrl, _ := router.Get("articles.show").URL("id", "23")
-	fmt.Println("articleUrl", articleUrl)
-
-	a := [6]int{1, 2, 3, 4, 5, 6}
-	fmt.Println(a)
+	//articleUrl, _ := router.Get("articles.show").URL("id", "23")
+	//fmt.Println("articleUrl", articleUrl)
 
 	http.ListenAndServe("127.0.0.1:3000", removeTrailingSlash(router))
 }
