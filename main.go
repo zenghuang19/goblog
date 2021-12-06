@@ -99,7 +99,42 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func articlesIndexHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "文章列表")
+	//1.执行查询，返回结果集
+	rows, err := db.Query("select * from articles")
+	checkError(err)
+	defer rows.Close()
+
+	var articles []Article
+	// 2.循环读取结果
+	for rows.Next() {
+		var article Article
+		//2.1 扫描每一行的结果并赋值到一个article 对象中
+		err := rows.Scan(&article.ID, &article.Title, &article.Body)
+		checkError(err)
+		//2.2将article 追加到articles的这个数组中
+		articles = append(articles, article)
+	}
+
+	//2.3 检查遍历时是否发生错误
+	err = rows.Err()
+	checkError(err)
+
+	// 3.加载模板
+	tmpl,err := template.ParseFiles("resources/views/articles/index.gohtml")
+	checkError(err)
+
+	//4.渲染模板，将所有的文章数据传输进去
+	err = tmpl.Execute(w, articles)
+	checkError(err)
+}
+
+func (a Article)Link() string  {
+	showURL,err := router.Get("articles.show").URL("id", strconv.FormatInt(a.ID,10))
+	if err != nil {
+		checkError(err)
+		return ""
+	}
+	return showURL.String()
 }
 
 type ArticlesFormData struct {
@@ -222,12 +257,12 @@ func articlesUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		title := r.PostFormValue("title")
 		body := r.PostFormValue("body")
 
-		errors := validateArticleFormData(title,body)
+		errors := validateArticleFormData(title, body)
 
 		if len(errors) == 0 {
 			// 4.2 表单通过验证
 			query := "update articles set title = ?,body = ? where id =?"
-			res,err := db.Exec(query,title,body,id)
+			res, err := db.Exec(query, title, body, id)
 
 			if err != nil {
 				checkError(err)
@@ -236,25 +271,25 @@ func articlesUpdateHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			//成功更新，跳转到文章详情页
-			if n,_ := res.RowsAffected(); n > 0 {
-				showURL,_ := router.Get("articles.show").URL("id", id)
-				http.Redirect(w,r,showURL.String(),http.StatusFound)
-			}else {
-				fmt.Fprint(w,"您没有做任何更改")
+			if n, _ := res.RowsAffected(); n > 0 {
+				showURL, _ := router.Get("articles.show").URL("id", id)
+				http.Redirect(w, r, showURL.String(), http.StatusFound)
+			} else {
+				fmt.Fprint(w, "您没有做任何更改")
 			}
-		}else {
+		} else {
 			//4.3 验证未通过
 
-			updateURL,_ := router.Get("articles.update").URL("id", id)
+			updateURL, _ := router.Get("articles.update").URL("id", id)
 			data := ArticlesFormData{
-				Title: title,
-				Body: body,
-				URL: updateURL,
+				Title:  title,
+				Body:   body,
+				URL:    updateURL,
 				Errors: errors,
 			}
-			tmpl,err := template.ParseFiles("resources/views/articles/edit.gohtml")
+			tmpl, err := template.ParseFiles("resources/views/articles/edit.gohtml")
 			checkError(err)
-			err = tmpl.Execute(w,data)
+			err = tmpl.Execute(w, data)
 			checkError(err)
 		}
 	}
@@ -293,7 +328,7 @@ func removeTrailingSlash(next http.Handler) http.Handler {
 	})
 }
 
-func validateArticleFormData(title string,body string)map[string]string  {
+func validateArticleFormData(title string, body string) map[string]string {
 	errors := make(map[string]string)
 	// 验证标题
 	if title == "" {
