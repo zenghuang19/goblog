@@ -12,7 +12,7 @@ var DB *gorm.DB
 
 func ConnectDB()*gorm.DB  {
 	var err error
-
+	
 	config := mysql.New(mysql.Config{
 		DSN: "root:root@tcp(mysql:3306)/cesi?charset=utf8&parseTime=True&loc=Local",
 	})
