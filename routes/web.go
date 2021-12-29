@@ -30,4 +30,7 @@ func RegisterWebRoutes(r *mux.Router)  {
 
 	//更新内容
 	r.HandleFunc("/articles/{id:[0-9]+}", ac.Update).Methods("POST").Name("articles.update")
+
+	//删除
+	r.HandleFunc("/articles/{id:[0-9]+}/delete", ac.Delete).Methods("POST").Name("articles.delete")
 }
