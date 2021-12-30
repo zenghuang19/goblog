@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func RegisterWebRoutes(r *mux.Router)  {
+func RegisterWebRoutes(r *mux.Router) {
 	// 静态页面
 	pc := new(controllers.PagesController)
 	r.NotFoundHandler = http.HandlerFunc(pc.NotFound)
