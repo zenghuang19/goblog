@@ -5,6 +5,7 @@ import (
 	"goblog/pkg/route"
 	"goblog/routes"
 )
+
 // SetupRoute 路由初始化
 func SetupRoute() *mux.Router {
 	router := mux.NewRouter()
