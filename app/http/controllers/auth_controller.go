@@ -4,22 +4,22 @@ import (
 	"fmt"
 	"goblog/app/models/user"
 	"goblog/app/requests"
+	"goblog/pkg/auth"
 	"goblog/pkg/view"
 	"net/http"
 )
 
 // AuthController 处理静态页面
 type AuthController struct {
-
 }
 
 // Register 注册页面
-func (*AuthController) Register(w http.ResponseWriter, r *http.Request)  {
-	view.Render(w,view.D{},"auth.register")
+func (*AuthController) Register(w http.ResponseWriter, r *http.Request) {
+	view.Render(w, view.D{}, "auth.register")
 }
 
 // DoRegister 注册逻辑
-func (*AuthController) DoRegister(w http.ResponseWriter, r *http.Request)  {
+func (*AuthController) DoRegister(w http.ResponseWriter, r *http.Request) {
 	// 1. 初始化数据
 	_user := user.User{
 		Name:            r.PostFormValue("name"),
@@ -33,19 +33,40 @@ func (*AuthController) DoRegister(w http.ResponseWriter, r *http.Request)  {
 		//验证未通过
 		view.RenderSimple(w, view.D{
 			"Errors": errs,
-			"User": _user,
+			"User":   _user,
 		}, "auth.register")
-	}else {
+	} else {
 		//  验证通过 —— 入库，并跳转到首页
 		_user.Create()
 		if _user.ID > 0 {
-			fmt.Fprint(w, "插入成功 ID为" +_user.GetStringID())
-		}else {
+			fmt.Fprint(w, "插入成功 ID为"+_user.GetStringID())
+		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprint(w, "创建用户失效，请联系管理员")
 		}
 	}
+}
 
-	// 5. 表单不通过 —— 重新显示表单
+// Login 登录表单
+func (*AuthController) Login(w http.ResponseWriter, r *http.Request) {
+	view.Render(w, view.D{}, "auth.login")
+}
 
+func (*AuthController) DoLogin(w http.ResponseWriter, r *http.Request)  {
+	// 1.初始化表单
+	email := r.PostFormValue("email")
+	password := r.PostFormValue("password")
+
+	//2.尝试登录
+	if err := auth.Attempt(email,password);err != nil {
+		//登录成功
+		http.Redirect(w,r,"/", http.StatusFound)
+	}else {
+		// 失败
+		view.RenderSimple(w,view.D{
+			"Error": err.Error(),
+			"Email": email,
+			"Password": password,
+		},"auth.login")
+	}
 }
