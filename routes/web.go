@@ -48,6 +48,8 @@ func RegisterWebRoutes(r *mux.Router) {
 	r.HandleFunc("/auth/login", auc.Login).Methods("GET").Name("auth.login")
 	r.HandleFunc("/auth/dologin", auc.DoLogin).Methods("POST").Name("auth.dologin")
 
+	r.HandleFunc("/auth/logout", auc.Logout).Methods("POST").Name("auth.logout")
+
 	//中间件：强制内容类型为 HTML
 	//r.Use(middlewares.ForceHTML)
 
