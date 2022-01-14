@@ -31,6 +31,10 @@ func User()user.User  {
 }
 
 func Attempt(email string,password string)error  {
+
+	//hash :=password.Hash(_password)
+	//a := password.CheckHash(_password,hash)
+	//fmt.Println(a)
 	//1.根据email获取用户
 	_user,err := user.GetByEmail(email)
 
