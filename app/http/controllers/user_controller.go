@@ -7,28 +7,20 @@ import (
 	"goblog/pkg/logger"
 	"goblog/pkg/route"
 	"goblog/pkg/view"
-	"gorm.io/gorm"
 	"net/http"
 )
 
 type UserController struct {
-
+	BaseController
 }
 
-func (*UserController) Show(w http.ResponseWriter,r *http.Request)  {
+func (uc *UserController) Show(w http.ResponseWriter,r *http.Request)  {
 	id := route.GetRouteVariable("id", r)
 
 	_user,err := user.Get(id)
 
 	if err!= nil {
-		if err == gorm.ErrRecordNotFound {
-			w.WriteHeader(http.StatusFound)
-			fmt.Fprint(w,"500 服务器内部错误")
-		}else {
-			logger.LogError(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Print(w, "500 服务器内部错误")
-		}
+		uc.ResponseForSQLError(w, err)
 	}else {
 		articles,err := article.GetBuyUserID(_user.GetStringID())
 
