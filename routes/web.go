@@ -36,6 +36,10 @@ func RegisterWebRoutes(r *mux.Router) {
 	//删除
 	r.HandleFunc("/articles/{id:[0-9]+}/delete", middlewares.Auth(ac.Delete)).Methods("POST").Name("articles.delete")
 
+	//用户相关
+	uc := new(controllers.UserController)
+	r.HandleFunc("/user/{id:[0-9]+}", uc.Show).Methods("Get").Name("users.show")
+
 	//静态资源
 	r.PathPrefix("/css/").Handler(http.FileServer(http.Dir("./public")))
 	r.PathPrefix("/js/").Handler(http.FileServer(http.Dir("./public")))

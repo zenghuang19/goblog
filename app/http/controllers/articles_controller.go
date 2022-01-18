@@ -25,7 +25,7 @@ func (*ArticlesController) Index(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "500 服务器内部错误")
 	} else {
 		// 2. 加载模板
-		view.Render(w, view.D{"Article" :articles}, "articles.index")
+		view.Render(w, view.D{"Article" :articles}, "articles.index", "articles._article_meta")
 	}
 }
 
@@ -36,6 +36,9 @@ func (*ArticlesController) Show(w http.ResponseWriter, r *http.Request) {
 	//2.读取文字数据
 	articles, err := article.Get(id)
 
+	if articles.User.Link  == nil {
+		fmt.Println(123)
+	}
 	//3.出现错误
 	if err != nil {
 		//3.1未找到数据
@@ -50,9 +53,8 @@ func (*ArticlesController) Show(w http.ResponseWriter, r *http.Request) {
 
 	} else {
 		//4.读取成功
-		view.Render(w, view.D{"Article":articles}, "articles.show")
+		view.Render(w, view.D{"Article":articles}, "articles.show", "articles._article_meta")
 	}
-	fmt.Fprintf(w, "ID"+id)
 }
 
 // Create 文章创建页面

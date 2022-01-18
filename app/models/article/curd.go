@@ -10,7 +10,7 @@ import (
 func Get(idstr string) (Article, error) {
 	var article Article
 	id := types.StringToUint64(idstr)
-	if err := model.DB.First(&article, id).Error; err != nil {
+	if err := model.DB.Preload("User").First(&article,id).Error; err != nil {
 		return article, err
 	}
 
@@ -20,7 +20,7 @@ func Get(idstr string) (Article, error) {
 func GetAll()([]Article,error)  {
 	var articles []Article
 
-	if err := model.DB.Find(&articles).Error;err != nil {
+	if err := model.DB.Preload("User").Find(&articles).Error;err != nil {
 		return articles,err
 	}
 
@@ -55,4 +55,13 @@ func (article *Article) Delete()(rowsAffected int64, err error)  {
 		return 0, err
 	}
 	return result.RowsAffected,nil
+}
+
+func GetBuyUserID(uid string)([]Article,error)  {
+	var articles []Article
+	if err := model.DB.Where("user_id = ?", uid).Preload("User").Find(&articles).Error;err != nil {
+		return articles,err
+	}
+
+	return articles,nil
 }
