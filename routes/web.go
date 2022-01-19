@@ -54,8 +54,10 @@ func RegisterWebRoutes(r *mux.Router) {
 
 	r.HandleFunc("/auth/logout", middlewares.Auth(auc.Logout)).Methods("POST").Name("auth.logout")
 
-	//中间件：强制内容类型为 HTML
-	//r.Use(middlewares.ForceHTML)
+	//文章分类
+	cc := new(controllers.CategoriesController)
+	r.HandleFunc("/categories/create", middlewares.Auth(cc.Create)).Methods("GET").Name("categories.create")
+	r.HandleFunc("/categories", middlewares.Auth(cc.Store)).Methods("POST").Name("categories.store")
 
 	// --全局中间件--
 	r.Use(middlewares.StartSession)
