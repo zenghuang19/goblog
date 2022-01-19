@@ -17,14 +17,14 @@ type ArticlesController struct {
 
 func (ac *ArticlesController) Index(w http.ResponseWriter, r *http.Request) {
 	// 1. 获取结果集
-	articles, err := article.GetAll()
+	articles, pagerData,err := article.GetAll(r,2)
 
 	if err != nil {
 		// 数据库错误
 		ac.ResponseForSQLError(w,err)
 	} else {
 		// 2. 加载模板
-		view.Render(w, view.D{"Article" :articles}, "articles.index", "articles._article_meta")
+		view.Render(w, view.D{"Articles" :articles, "PagerData":pagerData}, "articles.index", "articles._article_meta")
 	}
 }
 

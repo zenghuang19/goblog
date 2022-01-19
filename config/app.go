@@ -20,6 +20,6 @@ func init()  {
 		"key":config.Env("APP_KEY","33446a9dcf9ea060a0a6532b166da32f304af0de"),
 
 		//域名
-		"url":config.Env("APP_URL","127.0.0.1:"),
+		"url":config.Env("APP_URL","http://127.0.0.1:"),
 	})
 }
