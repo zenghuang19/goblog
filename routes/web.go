@@ -40,10 +40,6 @@ func RegisterWebRoutes(r *mux.Router) {
 	uc := new(controllers.UserController)
 	r.HandleFunc("/user/{id:[0-9]+}", uc.Show).Methods("Get").Name("users.show")
 
-	//静态资源
-	r.PathPrefix("/css/").Handler(http.FileServer(http.Dir("./public")))
-	r.PathPrefix("/js/").Handler(http.FileServer(http.Dir("./public")))
-
 	// 用户认证
 	auc := new(controllers.AuthController)
 	r.HandleFunc("/auth/register", middlewares.Guest(auc.Register)).Methods("GET").Name("auth.register")
